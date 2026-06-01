@@ -41,23 +41,26 @@ test.describe('Transaction creation', () => {
     // After successful creation, Firefly III redirects to the transaction list
     await expect(transactionListPage.successMessage).toBeVisible();
 
-    const listResponse = await apiClient.getTransactions({ type: 'withdrawal', limit: 1 });
+    const listResponse = await apiClient.getTransactions({ type: 'withdrawal', limit: 10 });
     expect(listResponse.status()).toBe(200);
 
     const listBody = await listResponse.json() as TransactionListResponse;
-    const newestTx = listBody.data[0].attributes.transactions[0];
+    const matchingEntry = listBody.data.find(
+      (entry) => entry.attributes.transactions[0]?.description === tx.description,
+    );
+    expect(matchingEntry).toBeDefined();
+    // TypeScript narrowing: matchingEntry is defined after the assertion above
+    const newestTx = matchingEntry!.attributes.transactions[0];
     expect(newestTx.description).toBe(tx.description);
     expect(newestTx.amount).toBe(tx.amount);
 
-    createdIds.push(listBody.data[0].id);
+    createdIds.push(matchingEntry!.id);
   });
 
   test('given empty amount field when submitting transaction form then inline validation error is shown', async ({
     transactionCreatePage,
     page,
   }) => {
-    const { webBaseUrl } = loadRegion();
-
     await transactionCreatePage.goto();
     await transactionCreatePage.fill({
       description: 'validation-test',

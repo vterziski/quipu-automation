@@ -21,7 +21,7 @@ test.describe('Login', () => {
     loginPage,
     page,
   }) => {
-    const { defaultUser } = loadRegion();
+    const { defaultUser, webBaseUrl } = loadRegion();
 
     await loginPage.goto();
     await loginPage.login(defaultUser.email, 'definitely-wrong-password-xyz');
@@ -29,10 +29,9 @@ test.describe('Login', () => {
     await expect(loginPage.errorAlert).toBeVisible();
     expect(page.url()).toContain('/login');
 
-    const cookies = await page.context().cookies();
-    const sessionCookie = cookies.find(
-      (c) => c.name.toLowerCase().includes('session') || c.name.toLowerCase().includes('laravel'),
-    );
-    expect(sessionCookie).toBeUndefined();
+    // Navigate to a protected route to confirm the user is not authenticated
+    await page.goto(`${webBaseUrl}/home`);
+    await page.waitForURL(/\/login/);
+    expect(page.url()).toContain('/login');
   });
 });
