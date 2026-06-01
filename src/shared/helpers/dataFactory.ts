@@ -11,12 +11,13 @@ export function buildTransaction(overrides: Partial<TransactionSplit> = {}): Tra
   return {
     transactions: [
       {
-        type: overrides.type ?? 'withdrawal',
-        date: overrides.date ?? today,
-        amount: overrides.amount ?? '10.00',
-        description: overrides.description ?? `Test withdrawal ${Date.now()}`,
-        source_name: overrides.source_name ?? DEFAULT_SOURCE,
-        destination_name: overrides.destination_name ?? DEFAULT_DESTINATION,
+        type: 'withdrawal',
+        date: today,
+        amount: '10.00',
+        description: `Test withdrawal ${Date.now()}`,
+        source_name: DEFAULT_SOURCE,
+        destination_name: DEFAULT_DESTINATION,
+        ...overrides,
       },
     ],
   };

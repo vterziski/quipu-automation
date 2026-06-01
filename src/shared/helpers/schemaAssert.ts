@@ -28,6 +28,10 @@ export function assertTransactionListSchema(
     throw new Error(`Schema assertion failed: expected array at root.data`);
   }
 
+  if (body['data'].length === 0) {
+    throw new Error(`Schema assertion failed: expected non-empty array at root.data`);
+  }
+
   for (let i = 0; i < body['data'].length; i++) {
     const item = body['data'][i] as unknown;
     assertObject(item, `data[${i}]`);
