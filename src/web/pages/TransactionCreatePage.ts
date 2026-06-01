@@ -17,7 +17,6 @@ export class TransactionCreatePage {
   private readonly sourceDropdown: Locator;
   private readonly destinationDropdown: Locator;
   private readonly submitButton: Locator;
-  readonly successMessage: Locator;
   readonly validationError: Locator;
 
   constructor(
@@ -30,7 +29,6 @@ export class TransactionCreatePage {
     this.sourceDropdown = page.locator('input[name="source_name"]').first();
     this.destinationDropdown = page.locator('input[name="destination_name"]').first();
     this.submitButton = page.locator('button[type="submit"]').first();
-    this.successMessage = page.locator('.alert-success, .message-success');
     this.validationError = page.locator('.has-error, .invalid-feedback, .text-danger');
   }
 
@@ -39,12 +37,24 @@ export class TransactionCreatePage {
     return this;
   }
 
+  private async fillAutocomplete(input: Locator, value: string): Promise<void> {
+    await input.fill(value);
+    // Select from the Vue autocomplete dropdown if it appears; fall back to keyboard Enter
+    const suggestion = this.page.locator('.multiselect__option, .autocomplete-option', { hasText: value }).first();
+    const hasSuggestion = await suggestion.isVisible().catch(() => false);
+    if (hasSuggestion) {
+      await suggestion.click();
+    } else {
+      await input.press('Enter');
+    }
+  }
+
   async fill(data: TransactionFormData): Promise<this> {
     await this.descriptionInput.fill(data.description);
     await this.amountInput.fill(data.amount);
     await this.dateInput.fill(data.date);
-    await this.sourceDropdown.fill(data.sourceName);
-    await this.destinationDropdown.fill(data.destinationName);
+    await this.fillAutocomplete(this.sourceDropdown, data.sourceName);
+    await this.fillAutocomplete(this.destinationDropdown, data.destinationName);
     return this;
   }
 
