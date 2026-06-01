@@ -1,0 +1,38 @@
+name: Web Tests
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  web-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Run web tests
+        run: npm run test:web
+        env:
+          REGION: eu-west
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          USER_EMAIL: ${{ secrets.USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: web-playwright-report
+          path: playwright-report/
+          retention-days: 7
