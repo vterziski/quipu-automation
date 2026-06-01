@@ -10,11 +10,18 @@ export interface RegionConfig {
   apiToken: string;
 }
 
+const SUPPORTED_REGIONS = ['eu-west', 'us-east'] as const;
+type SupportedRegion = (typeof SUPPORTED_REGIONS)[number];
+
 export function loadRegion(): RegionConfig {
   const regionName = process.env.REGION ?? 'eu-west';
-  // Dynamic require keeps region addition to one file only.
+  if (!(SUPPORTED_REGIONS as readonly string[]).includes(regionName)) {
+    throw new Error(
+      `Unknown region "${regionName}". Supported: ${SUPPORTED_REGIONS.join(', ')}`,
+    );
+  }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const mod = require(`./regions/${regionName}`) as { default: RegionConfig };
+  const mod = require(`./regions/${regionName as SupportedRegion}`) as { default: RegionConfig };
   if (!mod.default) {
     throw new Error(`Region config for "${regionName}" has no default export`);
   }
