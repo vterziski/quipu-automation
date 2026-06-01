@@ -1,20 +1,19 @@
 // src/web/tests/transaction.web.spec.ts
 import { test, expect } from '../fixtures/web.fixtures';
-import { loadRegion } from '../../../config/region';
 import { buildTransaction } from '../../shared/helpers/dataFactory';
 import type { TransactionListResponse } from '../../shared/types/firefly';
 
 test.describe('Transaction creation', () => {
   const createdIds: string[] = [];
 
-  test.beforeEach(async ({ loginPage }) => {
-    const { defaultUser } = loadRegion();
+  test.beforeEach(async ({ loginPage, region }) => {
     await loginPage.goto();
-    await loginPage.login(defaultUser.email, defaultUser.password);
+    await loginPage.login(region.defaultUser.email, region.defaultUser.password);
   });
 
   test.afterEach(async ({ apiClient }) => {
     for (const id of createdIds) {
+      // Swallow errors — cleanup failure must not mask the original test result
       await apiClient.deleteTransaction(id).catch(() => {});
     }
     createdIds.length = 0;
@@ -49,12 +48,12 @@ test.describe('Transaction creation', () => {
       (entry) => entry.attributes.transactions[0]?.description === tx.description,
     );
     expect(matchingEntry).toBeDefined();
-    // TypeScript narrowing: matchingEntry is defined after the assertion above
-    const newestTx = matchingEntry!.attributes.transactions[0];
+    if (!matchingEntry) throw new Error('Transaction not found in API response');
+    const newestTx = matchingEntry.attributes.transactions[0];
     expect(newestTx.description).toBe(tx.description);
     expect(newestTx.amount).toBe(tx.amount);
 
-    createdIds.push(matchingEntry!.id);
+    createdIds.push(matchingEntry.id);
   });
 
   test('given empty amount field when submitting transaction form then inline validation error is shown', async ({

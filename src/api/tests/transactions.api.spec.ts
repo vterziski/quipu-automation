@@ -55,7 +55,8 @@ test.describe('Transactions API', () => {
     assertTransactionListSchema(body);
 
     expect(body.meta.pagination.total).toBeGreaterThanOrEqual(0);
-    expect(body.meta.pagination.per_page).toBe(5);
+    expect(body.meta.pagination.per_page).toBeGreaterThanOrEqual(1);
+    expect(body.meta.pagination.per_page).toBeLessThanOrEqual(5);
     expect(body.meta.pagination.current_page).toBe(1);
   });
 

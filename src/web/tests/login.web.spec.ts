@@ -1,36 +1,33 @@
 // src/web/tests/login.web.spec.ts
 import { test, expect } from '../fixtures/web.fixtures';
-import { loadRegion } from '../../../config/region';
 
 test.describe('Login', () => {
   test('given valid credentials when submitting login form then dashboard is shown', async ({
     loginPage,
     dashboardPage,
+    region,
   }) => {
-    const { defaultUser, webBaseUrl } = loadRegion();
-
     await loginPage.goto();
-    await loginPage.login(defaultUser.email, defaultUser.password);
+    await loginPage.login(region.defaultUser.email, region.defaultUser.password);
 
     await expect(dashboardPage.navBar).toBeVisible();
     expect(dashboardPage.url()).not.toContain('/login');
-    expect(dashboardPage.url()).toContain(new URL(webBaseUrl).hostname);
+    expect(dashboardPage.url()).toContain(new URL(region.webBaseUrl).hostname);
   });
 
   test('given wrong password when submitting login form then error is shown and stays on login page', async ({
     loginPage,
     page,
+    region,
   }) => {
-    const { defaultUser, webBaseUrl } = loadRegion();
-
     await loginPage.goto();
-    await loginPage.login(defaultUser.email, 'definitely-wrong-password-xyz');
+    await loginPage.login(region.defaultUser.email, 'definitely-wrong-password-xyz');
 
     await expect(loginPage.errorAlert).toBeVisible();
     expect(page.url()).toContain('/login');
 
     // Navigate to a protected route to confirm the user is not authenticated
-    await page.goto(`${webBaseUrl}/home`);
+    await page.goto(`${region.webBaseUrl}/home`);
     await page.waitForURL(/\/login/);
     expect(page.url()).toContain('/login');
   });
