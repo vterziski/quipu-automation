@@ -9,7 +9,8 @@ test.describe('Transactions API', () => {
 
   test.afterEach(async ({ apiClient }) => {
     for (const id of createdIds) {
-      await apiClient.deleteTransaction(id);
+      // Swallow errors — cleanup failure must not mask the original test result
+      await apiClient.deleteTransaction(id).catch(() => {});
     }
     createdIds.length = 0;
   });
@@ -19,6 +20,7 @@ test.describe('Transactions API', () => {
 
     const response = await apiClient.createTransaction(payload);
 
+    // Firefly III returns 200 (not 201) for resource creation — this is a known API quirk
     expect(response.status()).toBe(200);
     expect(response.headers()['content-type']).toContain('application/json');
 
@@ -36,7 +38,9 @@ test.describe('Transactions API', () => {
     expect(response.status()).toBe(422);
 
     const body = await response.json() as ApiErrorResponse;
-    expect(body.message ?? body.errors).toBeDefined();
+    // message field is always present; errors contains per-field validation details
+    expect(body.message).toBeDefined();
+    expect(body.errors).toBeDefined();
     // Must be a specific validation error, not a generic 500
     expect(response.status()).not.toBe(500);
   });
