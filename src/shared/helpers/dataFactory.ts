@@ -7,7 +7,8 @@ const DEFAULT_SOURCE = 'Savings account';
 const DEFAULT_DESTINATION = 'Groceries';
 
 export function buildTransaction(overrides: Partial<TransactionSplit> = {}): TransactionCreatePayload {
-  const today = new Date().toISOString().split('T')[0] as string;
+  // datetime-local inputs require "YYYY-MM-DDTHH:MM"; API accepts both formats
+  const today = new Date().toISOString().slice(0, 16);
   return {
     transactions: [
       {

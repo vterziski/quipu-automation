@@ -16,36 +16,56 @@ export class TransactionCreatePage {
   private readonly dateInput: Locator;
   private readonly sourceDropdown: Locator;
   private readonly destinationDropdown: Locator;
-  private readonly submitButton: Locator;
+  readonly submitButton: Locator;
   readonly validationError: Locator;
 
   constructor(
     private readonly page: Page,
     private readonly region: RegionConfig,
   ) {
-    this.descriptionInput = page.locator('input[name="description"]').first();
-    this.amountInput = page.locator('input[name="amount"]').first();
-    this.dateInput = page.locator('input[name="date"]').first();
-    this.sourceDropdown = page.locator('input[name="source_name"]').first();
-    this.destinationDropdown = page.locator('input[name="destination_name"]').first();
-    this.submitButton = page.locator('button[type="submit"]').first();
-    this.validationError = page.locator('.has-error, .invalid-feedback, .text-danger');
+    this.descriptionInput = page.locator('input[name="description[]"]').first();
+    this.amountInput = page.locator('input[name="amount[]"]').first();
+    this.dateInput = page.locator('input[name="date[]"]').first();
+    this.sourceDropdown = page.locator('input[name="source[]"]').first();
+    this.destinationDropdown = page.locator('input[name="destination[]"]').first();
+    // Target the form's green Submit button specifically, not the navbar search button
+    this.submitButton = page.locator('button[type="submit"].btn-success, #submitButton').first();
+    this.validationError = page.locator('.has-error, .invalid-feedback, .text-danger').first();
   }
 
   async goto(): Promise<this> {
     await this.page.goto(`${this.region.webBaseUrl}/transactions/create/withdrawal`);
+    await this.dismissIntro();
     return this;
+  }
+
+  async dismissIntro(): Promise<void> {
+    // Use partial class match so upgrades from intro.js to another tour library still work
+    const overlay = this.page.locator('[class*="introjs-overlay"], [class*="shepherd-overlay"]');
+    if (await overlay.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+      await this.page.keyboard.press('Escape');
+      // String form avoids DOM lib requirement in tsconfig
+      await this.page.evaluate(`document.querySelectorAll('[class*="introjs-"],[class*="shepherd-"]').forEach(el=>el.remove())`);
+    }
   }
 
   private async fillAutocomplete(input: Locator, value: string): Promise<void> {
     await input.fill(value);
-    // Select from the Vue autocomplete dropdown if it appears; fall back to keyboard Enter
-    const suggestion = this.page.locator('.multiselect__option, .autocomplete-option', { hasText: value }).first();
-    const hasSuggestion = await suggestion.isVisible().catch(() => false);
-    if (hasSuggestion) {
+    // \s* allows for leading whitespace that autocomplete libraries may prepend to <li> text
+    const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const suggestion = this.page.locator('li').filter({ hasText: new RegExp(`^\\s*${escaped}`) }).first();
+    // Event-driven wait — no hardcoded timeout
+    let appeared = false;
+    try {
+      await suggestion.waitFor({ state: 'visible', timeout: 3000 });
+      appeared = true;
+    } catch {
+      appeared = false;
+    }
+    if (appeared) {
       await suggestion.click();
     } else {
-      await input.press('Enter');
+      await input.press('Tab');
     }
   }
 
@@ -59,6 +79,7 @@ export class TransactionCreatePage {
   }
 
   async submit(): Promise<void> {
+    await this.dismissIntro();
     await this.submitButton.click();
   }
 }

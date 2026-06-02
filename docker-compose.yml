@@ -1,0 +1,29 @@
+services:
+  app:
+    image: fireflyiii/core:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file: .env.docker
+    volumes:
+      - firefly_upload:/var/www/html/storage/upload
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:lts
+    restart: unless-stopped
+    env_file: .env.docker
+    volumes:
+      - firefly_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  firefly_upload:
+  firefly_db:

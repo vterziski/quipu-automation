@@ -1,6 +1,7 @@
 // src/web/tests/transaction.web.spec.ts
 import { test, expect } from '../fixtures/web.fixtures';
 import { buildTransaction } from '../../shared/helpers/dataFactory';
+import { parseAmount } from '../../shared/helpers/amounts';
 import type { TransactionListResponse } from '../../shared/types/firefly';
 
 test.describe('Transaction creation', () => {
@@ -27,6 +28,12 @@ test.describe('Transaction creation', () => {
     const seed = buildTransaction({ description: `ui-create-${Date.now()}` });
     const tx = seed.transactions[0];
 
+    // Fetch transaction count before the UI action (spec requirement: cross-layer baseline)
+    const beforeResponse = await apiClient.getTransactions({ type: 'withdrawal' });
+    expect(beforeResponse.status()).toBe(200);
+    const beforeBody = await beforeResponse.json() as TransactionListResponse;
+    const countBefore = beforeBody.meta.pagination.total;
+
     await transactionCreatePage.goto();
     await transactionCreatePage.fill({
       description: tx.description,
@@ -44,6 +51,7 @@ test.describe('Transaction creation', () => {
     expect(listResponse.status()).toBe(200);
 
     const listBody = await listResponse.json() as TransactionListResponse;
+    expect(listBody.meta.pagination.total).toBe(countBefore + 1);
     const matchingEntry = listBody.data.find(
       (entry) => entry.attributes.transactions[0]?.description === tx.description,
     );
@@ -51,7 +59,7 @@ test.describe('Transaction creation', () => {
     if (!matchingEntry) throw new Error('Transaction not found in API response');
     const newestTx = matchingEntry.attributes.transactions[0];
     expect(newestTx.description).toBe(tx.description);
-    expect(newestTx.amount).toBe(tx.amount);
+    expect(parseAmount(newestTx.amount)).toBe(parseAmount(tx.amount));
 
     createdIds.push(matchingEntry.id);
   });
@@ -60,20 +68,23 @@ test.describe('Transaction creation', () => {
     transactionCreatePage,
     page,
   }) => {
+    const seed = buildTransaction();
+    const tx = seed.transactions[0];
     await transactionCreatePage.goto();
     await transactionCreatePage.fill({
-      description: 'validation-test',
-      amount: '',
-      date: new Date().toISOString().split('T')[0] as string,
-      sourceName: 'Savings account',
-      destinationName: 'Groceries',
+      description: tx.description,
+      amount: '',  // intentionally empty to trigger validation
+      date: tx.date,
+      sourceName: tx.source_name,
+      destinationName: tx.destination_name,
     });
+
     await transactionCreatePage.submit();
 
+    // Firefly III shows a server-side validation error and stays on the create page
     await expect(transactionCreatePage.validationError).toBeVisible();
-    // URL stays on the create page — no redirect
     expect(page.url()).toContain('/transactions/create');
-    // Form remains interactive
-    await expect(page.locator('input[name="description"]').first()).toBeEnabled();
+    // Form remains interactive after validation failure
+    await expect(page.locator('input[name="description[]"]').first()).toBeEnabled();
   });
 });

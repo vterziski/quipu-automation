@@ -1,9 +1,16 @@
 // playwright.config.ts
 import 'dotenv/config';
 import { defineConfig } from '@playwright/test';
+import type { RegionConfig } from './config/region';
 import { loadRegion } from './config/region';
 
-const region = loadRegion();
+let region: RegionConfig;
+try {
+  region = loadRegion();
+} catch (e) {
+  const msg = e instanceof Error ? e.message : String(e);
+  throw new Error(`Playwright config failed to load region: ${msg}\nCopy .env.example to .env and set API_TOKEN.`);
+}
 
 export default defineConfig({
   fullyParallel: true,
@@ -25,7 +32,7 @@ export default defineConfig({
       use: {
         baseURL: region.webBaseUrl,
         browserName: 'chromium',
-        headless: true,
+        headless: !process.env.HEADED, // run with HEADED=1 for a visible browser
         trace: 'on-first-retry',
       },
     },

@@ -10,20 +10,36 @@ export interface RegionConfig {
   apiToken: string;
 }
 
-const SUPPORTED_REGIONS = ['eu-west', 'us-east'] as const;
-type SupportedRegion = (typeof SUPPORTED_REGIONS)[number];
-
 export function loadRegion(): RegionConfig {
   const regionName = process.env.REGION ?? 'eu-west';
-  if (!(SUPPORTED_REGIONS as readonly string[]).includes(regionName)) {
+  // Regex prevents path traversal — no allowlist needed; just add a config/regions/<name>.ts file
+  if (!/^[a-z0-9-]+$/.test(regionName)) {
     throw new Error(
-      `Unknown region "${regionName}". Supported: ${SUPPORTED_REGIONS.join(', ')}`,
+      `Invalid region name "${regionName}". Region names must match [a-z0-9-]+ (e.g. "eu-west", "local").`,
     );
   }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const mod = require(`./regions/${regionName as SupportedRegion}`) as { default: RegionConfig };
+  const mod = require(`./regions/${regionName}`) as { default?: RegionConfig };
   if (!mod.default) {
-    throw new Error(`Region config for "${regionName}" has no default export`);
+    throw new Error(
+      `Region "${regionName}" has no default export. Create config/regions/${regionName}.ts.`,
+    );
   }
-  return mod.default;
+  const config = mod.default;
+
+  if (!config.apiToken) {
+    throw new Error(
+      `API_TOKEN is not set for region "${regionName}". Both API and web tests require a token for setup and cleanup.`,
+    );
+  }
+  try {
+    new URL(config.webBaseUrl);
+    new URL(config.apiBaseUrl);
+  } catch {
+    throw new Error(
+      `Invalid URL in region "${regionName}": webBaseUrl="${config.webBaseUrl}", apiBaseUrl="${config.apiBaseUrl}". URLs must include a scheme (e.g. "http://localhost:8080").`,
+    );
+  }
+
+  return config;
 }

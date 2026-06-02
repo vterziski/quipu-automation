@@ -2,6 +2,7 @@
 import { test, expect } from '../fixtures/api.fixtures';
 import { buildTransaction } from '../../shared/helpers/dataFactory';
 import { assertTransactionListSchema } from '../../shared/helpers/schemaAssert';
+import { parseAmount } from '../../shared/helpers/amounts';
 import type { TransactionCreateResponse, ApiErrorResponse } from '../../shared/types/firefly';
 
 test.describe('Transactions API', () => {
@@ -22,11 +23,11 @@ test.describe('Transactions API', () => {
 
     // Firefly III returns 200 (not 201) for resource creation — this is a known API quirk
     expect(response.status()).toBe(200);
-    expect(response.headers()['content-type']).toContain('application/json');
+    expect(response.headers()['content-type']).toContain('json');
 
     const body = await response.json() as TransactionCreateResponse;
     expect(body.data.id).toBeDefined();
-    expect(body.data.attributes.transactions[0].amount).toBe(payload.transactions[0].amount);
+    expect(parseAmount(body.data.attributes.transactions[0].amount)).toBe(parseAmount(payload.transactions[0].amount));
     expect(body.data.attributes.transactions[0].description).toBe(payload.transactions[0].description);
 
     createdIds.push(body.data.id);

@@ -7,8 +7,9 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 
-# Environment variables (security)
+# Environment variables (security — never commit real credentials)
 .env
+.env.docker
 
 # Build output
 dist/
