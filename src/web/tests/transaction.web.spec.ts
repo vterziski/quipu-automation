@@ -5,25 +5,16 @@ import { parseAmount } from '../../shared/helpers/amounts';
 import type { TransactionListResponse } from '../../shared/types/firefly';
 
 test.describe('Transaction creation', () => {
-  const createdIds: string[] = [];
-
   test.beforeEach(async ({ loginPage, region }) => {
     await loginPage.goto();
     await loginPage.login(region.defaultUser.email, region.defaultUser.password);
-  });
-
-  test.afterEach(async ({ apiClient }) => {
-    for (const id of createdIds) {
-      // Swallow errors — cleanup failure must not mask the original test result
-      await apiClient.deleteTransaction(id).catch(() => {});
-    }
-    createdIds.length = 0;
   });
 
   test('given authenticated user when creating transaction via UI then API confirms newest transaction matches', async ({
     transactionCreatePage,
     transactionListPage,
     apiClient,
+    createdIds,
   }) => {
     const seed = buildTransaction({ description: `ui-create-${Date.now()}` });
     const tx = seed.transactions[0];
@@ -52,6 +43,7 @@ test.describe('Transaction creation', () => {
 
     const listBody = await listResponse.json() as TransactionListResponse;
     expect(listBody.meta.pagination.total).toBe(countBefore + 1);
+
     const matchingEntry = listBody.data.find(
       (entry) => entry.attributes.transactions[0]?.description === tx.description,
     );

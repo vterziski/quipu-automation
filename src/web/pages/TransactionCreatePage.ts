@@ -40,11 +40,11 @@ export class TransactionCreatePage {
   }
 
   async dismissIntro(): Promise<void> {
-    // Use partial class match so upgrades from intro.js to another tour library still work
+    // Primary prevention: fixture pre-disables intro.js via addInitScript.
+    // This is a fallback for any overlay that slipped through (e.g. already rendered).
     const overlay = this.page.locator('[class*="introjs-overlay"], [class*="shepherd-overlay"]');
-    if (await overlay.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+    if (await overlay.first().isVisible({ timeout: 500 }).catch(() => false)) {
       await this.page.keyboard.press('Escape');
-      // String form avoids DOM lib requirement in tsconfig
       await this.page.evaluate(`document.querySelectorAll('[class*="introjs-"],[class*="shepherd-"]').forEach(el=>el.remove())`);
     }
   }

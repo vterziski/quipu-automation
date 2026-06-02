@@ -5,6 +5,7 @@ on:
     branches: ['**']
   pull_request:
     branches: [main]
+  workflow_call:
 
 jobs:
   api-tests:
@@ -24,6 +25,12 @@ jobs:
         env:
           REGION: eu-west
           API_TOKEN: ${{ secrets.API_TOKEN }}
+
+      - name: Write summary
+        if: always()
+        run: |
+          echo "## API Tests — ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "Run at: $(date -u)" >> $GITHUB_STEP_SUMMARY
 
       - uses: actions/upload-artifact@v4
         if: failure()

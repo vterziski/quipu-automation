@@ -11,6 +11,7 @@ import { TransactionListPage } from '../pages/TransactionListPage';
 type WebFixtures = {
   region: RegionConfig;
   apiClient: FireflyClient;
+  createdIds: string[];
   loginPage: LoginPage;
   dashboardPage: DashboardPage;
   transactionCreatePage: TransactionCreatePage;
@@ -24,6 +25,13 @@ export const test = base.extend<WebFixtures>({
   apiClient: async ({ request, region }, use) => {
     await use(new FireflyClient(request, region));
   },
+  createdIds: async ({ apiClient }, use) => {
+    const ids: string[] = [];
+    await use(ids);
+    for (const id of ids) {
+      await apiClient.deleteTransaction(id).catch(() => {});
+    }
+  },
   loginPage: async ({ page, region }, use) => {
     await use(new LoginPage(page, region));
   },
@@ -31,6 +39,10 @@ export const test = base.extend<WebFixtures>({
     await use(new DashboardPage(page, region));
   },
   transactionCreatePage: async ({ page, region }, use) => {
+    // Pre-disable intro.js so the tour overlay never blocks form interactions
+    await page.addInitScript(
+      `Object.defineProperty(window,'introJs',{configurable:true,get:()=>()=>({start:()=>{},exit:()=>{},addSteps:()=>{},setOptions:()=>({start:()=>{}})})})`,
+    );
     await use(new TransactionCreatePage(page, region));
   },
   transactionListPage: async ({ page, region }, use) => {

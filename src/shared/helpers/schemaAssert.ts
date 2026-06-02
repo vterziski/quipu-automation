@@ -19,6 +19,18 @@ function assertObject(value: unknown, path: string): asserts value is Record<str
   }
 }
 
+function assertStringFields(obj: Record<string, unknown>, fields: string[], basePath: string): void {
+  for (const field of fields) {
+    assertString(obj[field], `${basePath}.${field}`);
+  }
+}
+
+function assertNumberFields(obj: Record<string, unknown>, fields: string[], basePath: string): void {
+  for (const field of fields) {
+    assertNumber(obj[field], `${basePath}.${field}`);
+  }
+}
+
 export function assertTransactionListSchema(
   body: unknown,
 ): asserts body is TransactionListResponse {
@@ -33,8 +45,7 @@ export function assertTransactionListSchema(
   for (let i = 0; i < body['data'].length; i++) {
     const item = body['data'][i] as unknown;
     assertObject(item, `data[${i}]`);
-    assertString(item['id'], `data[${i}].id`);
-    assertString(item['type'], `data[${i}].type`);
+    assertStringFields(item, ['id', 'type'], `data[${i}]`);
     assertObject(item['attributes'], `data[${i}].attributes`);
 
     const attrs = item['attributes'] as Record<string, unknown>;
@@ -44,15 +55,18 @@ export function assertTransactionListSchema(
 
     const tx = attrs['transactions'][0] as unknown;
     assertObject(tx, `data[${i}].attributes.transactions[0]`);
-    assertString(tx['amount'], `data[${i}].attributes.transactions[0].amount`);
-    assertString(tx['description'], `data[${i}].attributes.transactions[0].description`);
-    assertString(tx['date'], `data[${i}].attributes.transactions[0].date`);
-    assertString(tx['source_name'], `data[${i}].attributes.transactions[0].source_name`);
+    assertStringFields(
+      tx as Record<string, unknown>,
+      ['amount', 'description', 'date', 'source_name'],
+      `data[${i}].attributes.transactions[0]`,
+    );
   }
 
   assertObject(body['meta'], 'meta');
   assertObject(body['meta']['pagination'], 'meta.pagination');
-  assertNumber(body['meta']['pagination']['total'], 'meta.pagination.total');
-  assertNumber(body['meta']['pagination']['per_page'], 'meta.pagination.per_page');
-  assertNumber(body['meta']['pagination']['current_page'], 'meta.pagination.current_page');
+  assertNumberFields(
+    body['meta']['pagination'] as Record<string, unknown>,
+    ['total', 'per_page', 'current_page'],
+    'meta.pagination',
+  );
 }

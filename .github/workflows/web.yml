@@ -5,6 +5,7 @@ on:
     branches: ['**']
   pull_request:
     branches: [main]
+  workflow_call:
 
 jobs:
   web-tests:
@@ -29,6 +30,12 @@ jobs:
           API_TOKEN: ${{ secrets.API_TOKEN }}
           USER_EMAIL: ${{ secrets.USER_EMAIL }}
           USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
+
+      - name: Write summary
+        if: always()
+        run: |
+          echo "## Web Tests — ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "Run at: $(date -u)" >> $GITHUB_STEP_SUMMARY
 
       - uses: actions/upload-artifact@v4
         if: failure()

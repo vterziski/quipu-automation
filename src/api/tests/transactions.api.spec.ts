@@ -6,17 +6,7 @@ import { parseAmount } from '../../shared/helpers/amounts';
 import type { TransactionCreateResponse, ApiErrorResponse } from '../../shared/types/firefly';
 
 test.describe('Transactions API', () => {
-  const createdIds: string[] = [];
-
-  test.afterEach(async ({ apiClient }) => {
-    for (const id of createdIds) {
-      // Swallow errors — cleanup failure must not mask the original test result
-      await apiClient.deleteTransaction(id).catch(() => {});
-    }
-    createdIds.length = 0;
-  });
-
-  test('given valid payload when POST /transactions then HTTP 200 and body matches', async ({ apiClient }) => {
+  test('given valid payload when POST /transactions then HTTP 200 and body matches', async ({ apiClient, createdIds }) => {
     const payload = buildTransaction({ description: 'happy-path-test' });
 
     const response = await apiClient.createTransaction(payload);
@@ -61,7 +51,7 @@ test.describe('Transactions API', () => {
     expect(body.meta.pagination.current_page).toBe(1);
   });
 
-  test('given identical payload when POST /transactions twice then both return 200 with different ids', async ({ apiClient }) => {
+  test('given identical payload when POST /transactions twice then both return 200 with different ids', async ({ apiClient, createdIds }) => {
     // Firefly III does not enforce idempotency keys — each POST creates a separate transaction.
     // A production-grade API should return 409 or honour an Idempotency-Key header.
     // This test pins the current observed behaviour so regressions are detectable.

@@ -4,19 +4,15 @@ import type { TransactionCreatePayload } from '../../shared/types/firefly';
 
 export class FireflyClient {
   private readonly baseUrl: string;
-  private readonly token: string;
+  private readonly headers: Record<string, string>;
 
   constructor(
     private readonly request: APIRequestContext,
     config: RegionConfig,
   ) {
     this.baseUrl = config.apiBaseUrl;
-    this.token = config.apiToken;
-  }
-
-  private authHeaders(): Record<string, string> {
-    return {
-      Authorization: `Bearer ${this.token}`,
+    this.headers = {
+      Authorization: `Bearer ${config.apiToken}`,
       'Content-Type': 'application/json',
       Accept: 'application/vnd.api+json',
     };
@@ -24,7 +20,7 @@ export class FireflyClient {
 
   async createTransaction(payload: TransactionCreatePayload): Promise<APIResponse> {
     return this.request.post(`${this.baseUrl}/transactions`, {
-      headers: this.authHeaders(),
+      headers: this.headers,
       data: payload,
     });
   }
@@ -35,13 +31,13 @@ export class FireflyClient {
     if (params.limit !== undefined) qs.set('limit', String(params.limit));
     const query = qs.toString() ? `?${qs.toString()}` : '';
     return this.request.get(`${this.baseUrl}/transactions${query}`, {
-      headers: this.authHeaders(),
+      headers: this.headers,
     });
   }
 
   async deleteTransaction(id: string): Promise<APIResponse> {
     return this.request.delete(`${this.baseUrl}/transactions/${id}`, {
-      headers: this.authHeaders(),
+      headers: this.headers,
     });
   }
 }

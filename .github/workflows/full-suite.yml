@@ -7,68 +7,9 @@ on:
 
 jobs:
   api-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - run: npm ci
-
-      - name: Run API tests
-        run: npm run test:api
-        env:
-          REGION: eu-west
-          API_TOKEN: ${{ secrets.API_TOKEN }}
-
-      - name: Write API summary
-        if: always()
-        run: |
-          echo "## API Tests — ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "Run at: $(date -u)" >> $GITHUB_STEP_SUMMARY
-
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: api-playwright-report
-          path: playwright-report/
-          retention-days: 14
+    uses: ./.github/workflows/api.yml
+    secrets: inherit
 
   web-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - run: npm ci
-
-      - name: Install Playwright Chromium
-        run: npx playwright install chromium --with-deps
-
-      - name: Run web tests
-        run: npm run test:web
-        env:
-          REGION: eu-west
-          API_TOKEN: ${{ secrets.API_TOKEN }}
-          USER_EMAIL: ${{ secrets.USER_EMAIL }}
-          USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
-
-      - name: Write web summary
-        if: always()
-        run: |
-          echo "## Web Tests — ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "Run at: $(date -u)" >> $GITHUB_STEP_SUMMARY
-
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: web-playwright-report
-          path: playwright-report/
-          retention-days: 14
+    uses: ./.github/workflows/web.yml
+    secrets: inherit
